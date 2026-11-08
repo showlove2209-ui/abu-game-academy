@@ -63,9 +63,10 @@
     <input id="game-name" maxlength="60" placeholder="例如：會飛的小羊大冒險">
     <label class="field" for="idea-note">還有什麼超酷的點子？（選填）</label>
     <textarea id="idea-note" rows="3" maxlength="600" placeholder="用自己的話說就好，不用寫專業術語。"></textarea>
-    <div class="actions" style="margin-top:18px"><button class="button primary" id="save-idea">✨ 做成遊戲設計卡</button><button class="button outline" id="copy-idea">📋 複製給家長</button></div>
+    <div class="actions" style="margin-top:18px"><button class="button primary" id="save-idea">🌟 送出，看看下一步</button></div>
     <div class="result" id="idea-result" aria-live="polite"></div>
-    <p class="note">小提醒：這裡沒有標準答案，也不是考試。想法只存在這台 iPad 的瀏覽器中，不會自動傳到 GitHub 或 AI。</p>
+    <div class="panel plan-box" style="margin-top:18px;background:#101e34"><h3>📒 我的遊戲企劃正在長大</h3><div id="plan-preview" class="muted"></div></div>
+    <p class="note">這是網站內建的互動課程：選完會立刻解釋並帶你到下一題，不用每題都請家長轉傳。答案只存在這台裝置的瀏覽器中，尚未連接即時 ChatGPT。</p>
   </div>
 </section>
 <section id="preview" class="page" aria-label="遊戲試玩">
@@ -83,12 +84,12 @@
 <section id="parent" class="page" aria-label="家長管理">
   <div class="panel parentbox">
     <span class="tag gold">👪 家長管理區 · 此版免登入</span>
-    <h2>把孩子的創意帶給 AI 教練</h2>
-    <p class="muted">目前是無帳號的靜態網頁。各台 iPad 的進度只存於該台瀏覽器；如果要從孩子的 iPad 送到你的手機，請複製設計卡，或匯出進度檔分享給你。這裡的「家長區」只是操作分區，並非密碼保護。</p>
-    <div class="actions"><button class="button primary" id="copy-parent">📋 複製本階段提問</button><button class="button secondary" id="export-progress">⬇️ 匯出本機進度</button></div>
+    <h2>重要里程碑才交給 AI 工程師</h2>
+    <p class="muted">孩子可以自己在網站完成遊戲企劃前五關，不必每答一題就讓家長轉貼。到真正需要寫程式時，再由家長把<strong>整份企劃一次</strong>交給 ChatGPT 製作階段版本。網頁課程是預先設計的互動引導，不是即時連線的 AI。各台 iPad 目前只保留本機進度，且這個家長分區沒有密碼保護。</p>
+    <div class="actions"><button class="button primary" id="copy-parent">📋 複製整份遊戲企劃</button><button class="button secondary" id="export-progress">⬇️ 匯出本機進度</button></div>
     <div class="divider"></div>
     <h3>本地專案設定</h3>
-    <label class="field" for="stage-select">已和 AI 教練討論完成到哪一關？</label>
+    <label class="field" for="stage-select">目前要編輯哪一個開發階段？</label>
     <select id="stage-select"></select>
     <label class="field" for="game-url">最新試玩網址（選填）</label>
     <input id="game-url" type="url" inputmode="url" placeholder="https://example.com/my-game">
@@ -132,10 +133,10 @@ var words=[
 ["Commit","版本提交","把某次修改存成一個可追蹤的紀錄，像遊戲開發的存檔點。"],
 ["Playtest","遊戲試玩測試","實際玩一遍，找出哪裡好玩、哪裡不好用。"]
 ];
-var defaults={active:"a",projects:{a:{name:"工作室 A 的新遊戲",stage:0,choice:"",idea:"",url:"",version:""},b:{name:"工作室 B 的新遊戲",stage:0,choice:"",idea:"",url:"",version:""}}};
+var defaults={active:"a",projects:{a:{name:"工作室 A 的新遊戲",stage:0,choice:"",idea:"",answers:{},url:"",version:""},b:{name:"工作室 B 的新遊戲",stage:0,choice:"",idea:"",answers:{},url:"",version:""}}};
 var state=load();
 function load(){try{var data=JSON.parse(localStorage.getItem(KEY));if(data&&data.projects&&data.projects.a&&data.projects.b){return {active:data.active==="b"?"b":"a",projects:{a:clean(data.projects.a,"A"),b:clean(data.projects.b,"B")}};}}catch(e){}return JSON.parse(JSON.stringify(defaults));}
-function clean(p,label){p=p||{};return {name:String(p.name||"工作室 "+label+" 的新遊戲").slice(0,60),stage:Math.max(0,Math.min(7,parseInt(p.stage,10)||0)),choice:String(p.choice||"").slice(0,80),idea:String(p.idea||"").slice(0,600),url:validUrl(p.url)?String(p.url):"",version:String(p.version||"").slice(0,180)};}
+function clean(p,label){p=p||{};var idx=Math.max(0,Math.min(7,parseInt(p.stage,10)||0)),answers={};if(p.answers&&typeof p.answers==="object"){for(var i=0;i<8;i++){var a=p.answers[i];if(a&&typeof a==="object")answers[i]={choice:String(a.choice||"").slice(0,80),idea:String(a.idea||"").slice(0,600)};}}if(!answers[idx]&&(p.choice||p.idea)){answers[idx]={choice:String(p.choice||"").slice(0,80),idea:String(p.idea||"").slice(0,600)};}return {name:String(p.name||"工作室 "+label+" 的新遊戲").slice(0,60),stage:idx,choice:String(p.choice||"").slice(0,80),idea:String(p.idea||"").slice(0,600),answers:answers,url:validUrl(p.url)?String(p.url):"",version:String(p.version||"").slice(0,180)};}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("這個瀏覽器無法儲存，請先複製設計卡。");}}
 function project(){return state.projects[state.active];}
 function validUrl(str){if(!str)return false;try{var url=new URL(String(str));return url.protocol==="https:"||url.protocol==="http:";}catch(e){return false;}}
@@ -143,7 +144,7 @@ function safe(s){return String(s).replace(/[&<>"']/g,function(ch){return {"&":"&
 function toast(s){var e=document.getElementById("toast");e.textContent=s;e.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(function(){e.classList.remove("show");},2600);}
 function showTab(name){document.querySelectorAll(".page").forEach(function(x){x.classList.toggle("active",x.id===name);});document.querySelectorAll("[data-tab]").forEach(function(x){if(x.dataset.tab===name)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});window.scrollTo({top:0,behavior:"smooth"});}
 function render(){
-var p=project(),st=stages[p.stage],road=document.getElementById("roadmap");
+var p=project(),st=stages[p.stage],road=document.getElementById("roadmap"),current=p.answers[p.stage]||{choice:p.choice||"",idea:p.idea||""};
 document.getElementById("profile").value=state.active;
 document.getElementById("project-title").textContent=p.name;
 document.getElementById("project-status").textContent="目前在第 "+(p.stage+1)+" 關：「"+st[0]+"」。每次只完成一個小目標！";
@@ -155,17 +156,36 @@ document.getElementById("lesson-question").textContent=st[1];
 document.getElementById("lesson-help").textContent=st[3];
 document.getElementById("lesson-term").textContent=st[2]+"。"+st[3];
 document.getElementById("game-name").value=p.name.indexOf(" 的新遊戲")>-1?"":p.name;
-document.getElementById("idea-note").value=p.idea;
-document.getElementById("choices").innerHTML=st[4].map(function(s){var arr=s.split("|"),chosen=p.choice===arr[1]?' chosen':'',pressed=p.choice===arr[1]?'true':'false';return '<button class="choice'+chosen+'" data-choice="'+safe(arr[1])+'" aria-pressed="'+pressed+'"><span class="icon">'+safe(arr[0])+'</span><span>'+safe(arr[1])+'</span></button>';}).join("");
+document.getElementById("idea-note").value=current.idea;
+document.getElementById("choices").innerHTML=st[4].map(function(s){var arr=s.split("|"),chosen=current.choice===arr[1]?' chosen':'',pressed=current.choice===arr[1]?'true':'false';return '<button class="choice'+chosen+'" data-choice="'+safe(arr[1])+'" aria-pressed="'+pressed+'"><span class="icon">'+safe(arr[0])+'</span><span>'+safe(arr[1])+'</span></button>';}).join("");
 document.getElementById("idea-result").classList.remove("show");
+var entries=Object.keys(p.answers||{}).map(function(k){return Number(k);}).filter(function(i){return i>=0&&i<8&&p.answers[i]&&p.answers[i].choice;}).sort(function(a,b){return a-b;});
+document.getElementById("plan-preview").innerHTML=entries.length?entries.map(function(i){return '<p>✅ '+safe(stages[i][0])+'：<strong>'+safe(p.answers[i].choice)+'</strong></p>';}).join(""):'<p>你每完成一個選擇，就會多得到一張企劃卡。✨</p>';
 var opts=document.getElementById("stage-select");opts.innerHTML=stages.map(function(s,i){return '<option value="'+i+'">'+(i+1)+'. '+safe(s[0])+'</option>';}).join("");opts.value=String(p.stage);
 document.getElementById("game-url").value=p.url;document.getElementById("version-desc").value=p.version;
 var link=document.getElementById("play-link"),preview=document.getElementById("preview-content");
 if(p.url){link.hidden=false;link.href=p.url;preview.innerHTML='<div class="emoji">🎉</div><h3>新版本已準備好！</h3><p class="muted">按下方「開啟遊戲」在新分頁試玩。</p>';}else{link.hidden=true;link.removeAttribute("href");preview.innerHTML='<div class="emoji">🎮</div><h3>第一個遊戲版本正在等待設計</h3><p class="muted">先完成一個小功能，家長再貼入試玩網址。</p>';}
 document.getElementById("version-note").textContent="版本紀錄："+(p.version||"還沒有測試版本。");
+if(p.answers[p.stage]&&p.answers[p.stage].choice)showCoach(p,p.answers[p.stage],false);
 }
-function saveIdea(){var p=project();p.choice=document.querySelector(".choice.chosen")?.dataset.choice||p.choice;p.name=(document.getElementById("game-name").value.trim()||p.name).slice(0,60);p.idea=document.getElementById("idea-note").value.trim().slice(0,600);save();render();var result=document.getElementById("idea-result");result.innerHTML='<strong>🎉 設計卡已保存！</strong><p>遊戲：'+safe(p.name)+'</p><p>這一關的選擇：'+safe(p.choice||"尚未選擇")+'</p><p class="muted">下一步：把設計卡交給家長，請 AI 教練和你討論這個選擇，暫時不用急著進下一關。</p>';result.classList.add("show");toast("太棒了！這次的想法已經記下來 ✨");}
-function share(){var p=project(),st=stages[p.stage];return "【SheepVerse 家庭遊戲開發教室｜本階段設計卡】\n遊戲名稱："+p.name+"\n階段："+(p.stage+1)+"／8 "+st[0]+"\n今天討論："+st[1]+"\n孩子的選擇："+(p.choice||"還沒選") +"\n補充想法："+(p.idea||"沒有補充") +"\n\n給 AI 教練的要求：請依照 TEACHING_GUIDE.md 的規則，只教一個必要術語、先接住孩子的創意、只問一個簡單的選擇題，不要直接完成整款遊戲。程式由 AI 撰寫；孩子負責設計決策和試玩。由家長代為與 ChatGPT 互動。";}
+var coachReplies=[
+{"射擊對戰":"原來你喜歡刺激的戰鬥！我們之後可以一起決定武器、敵人和勝利條件。","探索冒險":"你想發現未知的世界！我們可以設計秘密通道、寶物和驚喜。","自由建造":"你想自己創造世界！我們可以慢慢想有哪些物品能組合。","合作闖關":"你想和夥伴一起解決問題！之後可以討論每位玩家能幫上什麼忙。"},
+{"跑跑跳跳":"移動就是樂趣的中心，第一個版本可以先讓角色跑跳得順暢。","瞄準射擊":"瞄準和命中的感覺很重要，我們之後先做一個能安全試玩的目標。","解謎探索":"玩家要靠觀察找到答案，可以先設計一個有趣的小謎題。","收集建造":"先收集、再使用材料，這就能形成一個完整的遊戲循環。"},
+{"角色能移動":"好選擇！先讓角色能在畫面裡自由走動，就是一個看得見的小成果。","能完成一次攻擊":"第一版可以先做一個簡單、安全的攻擊目標，測試操作手感。","能達成一個目標":"有目標就有成就感！我們先設計一個小小的勝利條件。","能走進一張地圖":"先有一個可探索的地方，之後再慢慢增加內容。"},
+{"可愛卡通":"卡通風格比較活潑，也很適合誇張有趣的動作！","方塊世界":"方塊造型容易辨認，我們可以用簡單的幾何形狀開始。","奇幻魔法":"想像力可以放大！我們能加入發光的技能和神祕場景。","科幻未來":"未來感十足！可以思考機器、能量和科技裝備的造型。"},
+{"自己單人玩":"先把單人版做得好玩，通常是最容易開始的路線。","和家人輪流玩":"輪流玩很適合先比較成績，第一版不必急著做網路系統。","未來想合作":"合作很酷！我們先做可玩的單人雛形，等規則穩定再研究連線。","先做好第一版":"這是很好的專案決定！先做得出來，再決定要不要加更多玩家。"},
+{"移動更順":"操作順暢很重要，工程師會先處理角色移動與手感。","增加生命值":"有了生命值，玩家就能清楚知道何時受傷、何時需要小心。","新增攻擊方式":"新的攻擊讓玩法更多變，我們會先做一種並確認好用。","新增勝利條件":"有清楚的勝利條件，玩家才會知道這一局為什麼要努力。"},
+{"角色卡住了":"你發現一個很有價值的 Bug！我們需要知道在哪裡、做了什麼動作。","操作不順":"很好的測試回饋！可以試著說說是太快、太慢還是按鈕不好按。","難度不剛好":"難度平衡會影響樂趣，我們可以調整敵人速度或關卡節奏。","想加更有趣的東西":"你的新點子很重要！先寫在下次更新清單，不急著一次加完。"},
+{"家人":"先邀請家人一起測試，是安全又有趣的起點。","熟悉的朋友":"邀請朋友試玩能得到新想法，但公開前需要家長同意。","先自己測試":"先把小問題修好再分享，這也是開發者常做的事。","準備下一次更新":"一個版本完成，下一個小目標又可以開始囉！"}
+];
+function planText(){var p=project(),lines=["【SheepVerse 遊戲企劃書】","遊戲名稱："+p.name];for(var i=0;i<8;i++){var a=p.answers[i];if(a&&a.choice){lines.push((i+1)+". "+stages[i][0]+"："+a.choice);if(a.idea)lines.push("   補充："+a.idea);}}return lines.join("\n");}
+function showCoach(p,answer,autoscroll){var i=p.stage,reply=(coachReplies[i]||{})[answer.choice]||"你的選擇已經記下來了！現在來想下一個小問題。",result=document.getElementById("idea-result");var next=stages[Math.min(i+1,7)];var html='<span class="tag green">🐑 小羊開發教練</span><h3>太好了，你選擇了「'+safe(answer.choice)+'」！</h3><p>'+safe(reply)+'</p><p class="muted">今天的開發紀錄已經保存 ✅</p>';
+if(i===5&&!p.url){html+='<div class="hint">我們已經完成許多設計！真正製作遊戲需要程式工程師。請家長之後把完整企劃一次交給 ChatGPT，不需要每個問題來回轉貼。</div><button class="button secondary" type="button" id="open-plan">📋 看看我們的完整企劃</button>';}
+else if(i<7){html+='<p><strong>接下來：'+safe(next[0])+'</strong><br>'+safe(next[1])+'</p><button class="button primary" type="button" id="continue-lesson">🚀 下一關，繼續玩！</button>';}
+else{html+='<p>🎉 你完成這次遊戲開發旅程了！下一個更新點子可以再慢慢討論。</p><button class="button secondary" type="button" id="open-plan">📋 查看完整企劃</button>';}
+result.innerHTML=html;result.classList.add("show");if(autoscroll!==false)result.scrollIntoView({behavior:"smooth",block:"nearest"});}
+function saveIdea(){var p=project(),chosen=document.querySelector(".choice.chosen"),choice=chosen?chosen.dataset.choice:"",idea=document.getElementById("idea-note").value.trim().slice(0,600);if(!choice){toast("先選一個你覺得最好玩的方向吧！沒有標準答案 😄");return;}p.name=(document.getElementById("game-name").value.trim()||p.name).slice(0,60);p.choice=choice;p.idea=idea;p.answers[p.stage]={choice:choice,idea:idea};save();render();showCoach(p,{choice:choice,idea:idea});toast("很好！這一關完成了 ✨");}
+function share(){return planText()+"\n\n給 ChatGPT 工程師：這是孩子在網站上逐步選擇的遊戲企劃，請先檢查 MVP 是否合理，再只做一個可以試玩的階段版本。孩子負責創意與測試，AI 負責程式。請以白話解釋技術術語，避免直接把所有功能一次做完。";}
 async function copy(str){try{await navigator.clipboard.writeText(str);toast("已複製！請傳給家長 👪");}catch(e){var ta=document.createElement("textarea");ta.value=str;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("已複製！");}catch(err){toast("無法自動複製，請截圖傳給家長。");}ta.remove();}}
 function exportProgress(){var data=JSON.stringify({format:"abu-academy-v1",exportedAt:new Date().toISOString(),data:state},null,2);var blob=new Blob([data],{type:"application/json"}),a=document.createElement("a"),url=URL.createObjectURL(blob);a.href=url;a.download="sheepverse-classroom-progress.json";a.click();setTimeout(function(){URL.revokeObjectURL(url);},2000);toast("已匯出本機進度檔");}
 document.querySelectorAll("[data-tab]").forEach(function(b){b.addEventListener("click",function(){showTab(b.dataset.tab);});});
@@ -173,10 +193,10 @@ document.querySelectorAll("[data-jump]").forEach(function(b){b.addEventListener(
 document.getElementById("profile").addEventListener("change",function(e){state.active=e.target.value==="b"?"b":"a";save();render();});
 document.getElementById("choices").addEventListener("click",function(e){var b=e.target.closest("[data-choice]");if(!b)return;project().choice=b.dataset.choice;save();document.querySelectorAll(".choice").forEach(function(x){var active=x===b;x.classList.toggle("chosen",active);x.setAttribute("aria-pressed",active?"true":"false");});});
 document.getElementById("save-idea").addEventListener("click",saveIdea);
-document.getElementById("copy-idea").addEventListener("click",function(){saveIdea();copy(share());});
+document.getElementById("idea-result").addEventListener("click",function(e){var target=e.target.closest("button");if(!target)return;var p=project();if(target.id==="continue-lesson"&&p.stage<7){p.stage+=1;p.choice="";p.idea="";save();render();showTab("lesson");document.getElementById("lesson-question").scrollIntoView({behavior:"smooth",block:"start"});}else if(target.id==="open-plan"){var result=document.getElementById("idea-result");result.innerHTML='<span class="tag green">📒 完整遊戲企劃</span><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.8">'+safe(planText())+'</pre><p class="muted">網站課程已經把想法整理好了。真正寫程式的工作，會在開發里程碑由家長啟動 ChatGPT 工程師一次處理。</p><button class="button secondary" type="button" id="close-plan">返回教練說明</button>';result.classList.add("show");}else if(target.id==="close-plan"){var a=p.answers[p.stage];if(a)showCoach(p,a);}});
 document.getElementById("copy-parent").addEventListener("click",function(){copy(share());});
 document.getElementById("export-progress").addEventListener("click",exportProgress);
-document.getElementById("save-parent").addEventListener("click",function(){var p=project(),u=document.getElementById("game-url").value.trim();if(u&&!validUrl(u)){toast("試玩網址需要以 https:// 或 http:// 開頭");return;}p.stage=Math.max(0,Math.min(7,parseInt(document.getElementById("stage-select").value,10)||0));p.choice="";p.url=u;p.version=document.getElementById("version-desc").value.trim().slice(0,180);save();render();toast("已更新這台 iPad 的專案進度");});
+document.getElementById("save-parent").addEventListener("click",function(){var p=project(),u=document.getElementById("game-url").value.trim();if(u&&!validUrl(u)){toast("試玩網址需要以 https:// 或 http:// 開頭");return;}p.stage=Math.max(0,Math.min(7,parseInt(document.getElementById("stage-select").value,10)||0));p.choice=(p.answers[p.stage]&&p.answers[p.stage].choice)||"";p.idea=(p.answers[p.stage]&&p.answers[p.stage].idea)||"";p.url=u;p.version=document.getElementById("version-desc").value.trim().slice(0,180);save();render();toast("已更新這台 iPad 的專案進度");});
 document.getElementById("word-list").innerHTML=words.map(function(w){return '<article class="panel word"><h3>'+safe(w[1])+'</h3><small>'+safe(w[0])+'</small><p>'+safe(w[2])+'</p></article>';}).join("");
 render();
 })();
